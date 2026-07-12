@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoVector // Premium Geometric SVG & Asset Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Premium Header & Micro-Sponsorship Banner Placement -->
+    <header class="app-header">
+        <div class="logo-zone">
+            <span class="logo-icon">⬢</span>
+            <h1>Geo<span class="accent-text">Vector</span></h1>
+            <span class="badge">v1.2 PRO-ENGINE</span>
+        </div>
+        <div class="sponsor-space" id="sponsorZone">
+            <span class="sponsor-label">Sponsored by</span>
+            <a href="#" class="sponsor-link" target="_blank" rel="nofollow">Vercel // Deploy Instantly</a>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Control Panel Sidebar Layout -->
+        <aside class="controls-sidebar">
+            <div class="sidebar-section">
+                <h3>Geometry Core</h3>
+                
+                <div class="control-group">
+                    <label for="sideCount">Vertices / Sides <span class="val-badge" id="sideVal">5</span></label>
+                    <input type="range" id="sideCount" min="3" max="60" value="8">
+                </div>
+
+                <div class="control-group">
+                    <label for="skipCount">Skip Factor (Star Mode) <span class="val-badge" id="skipVal">2</span></label>
+                    <input type="range" id="skipCount" min="1" max="29" value="2">
+                </div>
+
+                <div class="control-group">
+                    <label for="layerCount">Concentric Layers <span class="val-badge" id="layerVal">3</span></label>
+                    <input type="range" id="layerCount" min="1" max="8" value="3">
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>VFX & Rendering</h3>
+                
+                <div class="control-group">
+                    <label for="speedCtrl">Drawing Speed</label>
+                    <input type="range" id="speedCtrl" min="10" max="120" value="80" step="10">
+                </div>
+
+                <div class="control-group">
+                    <label for="glowCtrl">Neon Glow <span class="val-badge" id="glowVal">15</span></label>
+                    <input type="range" id="glowCtrl" min="0" max="40" value="15">
+                </div>
+
+                <div class="control-group">
+                    <label for="hueShift">Color Wave / Gradient Step <span class="val-badge" id="hueShiftVal">15°</span></label>
+                    <input type="range" id="hueShift" min="0" max="90" value="15" step="5">
+                </div>
+            </div>
+
+            <div class="sidebar-section action-grid">
+                <button id="colorBtn" class="btn btn-secondary" type="button">🎨 Shift Palette</button>
+                <button id="autoBtn" class="btn btn-accent" type="button">🚀 Auto-Pilot</button>
+                <button id="drawBtn" class="btn btn-primary full-width">Regenerate Asset</button>
+            </div>
+
+            <!-- Premium Freemium Upsell Placement -->
+            <div class="premium-upsell">
+                <h4>Unlock Commercial Pattern Grids</h4>
+                <p>Export mass layouts, seamless CSS tiles, and raw Figma-ready nodes instantly.</p>
+                <button class="btn btn-gold full-width">Upgrade to Pro ($9)</button>
+            </div>
+        </aside>
+
+        <!-- Canvas Production Stage Visual Viewport Layout -->
+        <main class="canvas-stage">
+            <div class="canvas-wrapper">
+                <canvas id="shapeCanvas" width="600" height="600"></canvas>
+            </div>
+
+            <div class="export-tray">
+                <button id="exportBtn" class="btn btn-success">💾 Export PNG</button>
+                <button id="svgExportBtn" class="btn btn-info">📐 Copy Production SVG Code</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
