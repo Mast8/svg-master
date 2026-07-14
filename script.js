@@ -305,7 +305,7 @@ exportButton.addEventListener('click', () => {
 
     const downloadLink = document.createElement('a');
     downloadLink.href = tempCanvas.toDataURL('image/png');
-    downloadLink.download = `geovector-asset-${sideInput.value}v-skip${skipInput.value}.png`;
+    downloadLink.download = `geovector-${sideInput.value}v-${skipInput.value}.png`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
