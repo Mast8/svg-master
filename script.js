@@ -349,8 +349,9 @@ function generateSVGDocument() {
     if (points.length === 0) return "";
     
     const layers = parseInt(layerInput.value, 10) || 1;
-    const centerX = BASE_WIDTH / 2;
-    const centerY = BASE_HEIGHT / 2;
+    // Fix: Read directly from your defined canvas element
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
     
     let svgPathsMarkup = "";
 
@@ -376,7 +377,8 @@ function generateSVGDocument() {
   </g>\n`;
     }
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BASE_WIDTH} ${BASE_HEIGHT}" width="100%" height="100%">
+    // Fix: Read directly from your defined canvas element
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvas.width} ${canvas.height}" width="100%" height="100%">
   <rect width="100%" height="100%" fill="#121214"/>
 ${svgPathsMarkup}</svg>`;
 }
