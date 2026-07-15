@@ -21,6 +21,8 @@ const layerVal = document.getElementById('layerVal');
 const glowVal = document.getElementById('glowVal');
 const hueShiftVal = document.getElementById('hueShiftVal');
 
+const svgDownloadButton = document.getElementById('svgDownloadBtn');
+
 let currentHue = 280; 
 let animationId = null;
 let autoPilotInterval = null;
@@ -310,3 +312,71 @@ exportButton.addEventListener('click', () => {
     downloadLink.click();
     document.body.removeChild(downloadLink);
 });
+
+// Direct SVG File Downloader
+svgDownloadButton.addEventListener('click', () => {
+    const svgFullDocument = generateSVGDocument();
+    if (!svgFullDocument) return;
+
+    // Convert SVG markup string into a binary blob
+    const svgBlob = new Blob([svgFullDocument], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    // Create virtual anchor link and click it to trigger native saving
+    const downloadLink = document.createElement('a');
+    downloadLink.href = svgUrl;
+    downloadLink.download = `geovector-${sideInput.value}v-${skipInput.value}.svg`;
+    
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    
+    // Memory Cleanup
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(svgUrl);
+
+    // UI Feedback Micro-Interaction
+    const originalText = svgDownloadButton.innerText;
+    svgDownloadButton.innerText = "✓ File Saved!";
+    const prevBackground = svgDownloadButton.style.background;
+    svgDownloadButton.style.background = "#10b981";
+    setTimeout(() => {
+        svgDownloadButton.innerText = originalText;
+        svgDownloadButton.style.background = prevBackground;
+    }, 2000);
+});
+
+function generateSVGDocument() {
+    if (points.length === 0) return "";
+    
+    const layers = parseInt(layerInput.value, 10) || 1;
+    const centerX = BASE_WIDTH / 2;
+    const centerY = BASE_HEIGHT / 2;
+    
+    let svgPathsMarkup = "";
+
+    for (let layer = 0; layer < layers; layer++) {
+        const scale = 1 - (layer * (0.6 / layers));
+        const baseLayerHue = (currentHue + (layer * hueShiftAmount)) % 360;
+        
+        let pathSegments = "";
+        for (let i = 0; i < sides; i++) {
+            const startPt = points[i % sides];
+            const endPt = points[(i + 1) % sides];
+            const localHue = (baseLayerHue + (i * (360 / sides))) % 360;
+            const strokeColor = `hsl(${localHue}, 95%, 60%)`;
+            
+            pathSegments += `\n    <line x1="${startPt.x}" y1="${startPt.y}" x2="${endPt.x}" y2="${endPt.y}" stroke="${strokeColor}" stroke-width="4" stroke-linecap="round" />`;
+        }
+
+        const polyPoints = points.map(p => `${p.x},${p.y}`).join(' ');
+        const fillAlphaColor = `hsla(${baseLayerHue}, 95%, 60%, 0.03)`;
+
+        svgPathsMarkup += `  <g transform="translate(${centerX}, ${centerY}) scale(${scale}) translate(${-centerX}, ${-centerY})">
+    <polygon points="${polyPoints}" fill="${fillAlphaColor}" stroke="none" />${pathSegments}
+  </g>\n`;
+    }
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BASE_WIDTH} ${BASE_HEIGHT}" width="100%" height="100%">
+  <rect width="100%" height="100%" fill="#121214"/>
+${svgPathsMarkup}</svg>`;
+}
