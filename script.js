@@ -1,7 +1,14 @@
 // Globals and DOM nodes cache
 const canvas = document.getElementById('shapeCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas ? canvas.getContext('2d') : null;
 
+// Ensure your canvas has default dimensions set if not defined in HTML
+if (canvas) {
+    if (!canvas.width) canvas.width = 600;
+    if (!canvas.height) canvas.height = 600;
+}
+
+// UI Controls & Inputs
 const sideInput = document.getElementById('sideCount');
 const skipInput = document.getElementById('skipCount');
 const layerInput = document.getElementById('layerCount');
@@ -9,31 +16,33 @@ const speedInput = document.getElementById('speedCtrl');
 const glowInput = document.getElementById('glowCtrl');
 const hueShiftInput = document.getElementById('hueShift');
 
+// Action Buttons
 const colorButton = document.getElementById('colorBtn'); 
 const drawButton = document.getElementById('drawBtn');
 const autoButton = document.getElementById('autoBtn');
 const exportButton = document.getElementById('exportBtn');
 const svgExportButton = document.getElementById('svgExportBtn');
+const svgDownloadButton = document.getElementById('svgDownloadBtn');
 
+// Value Readout Labels
 const sideVal = document.getElementById('sideVal');
 const skipVal = document.getElementById('skipVal');
 const layerVal = document.getElementById('layerVal');
 const glowVal = document.getElementById('glowVal');
 const hueShiftVal = document.getElementById('hueShiftVal');
 
-const svgDownloadButton = document.getElementById('svgDownloadBtn');
-
+// State Variables
 let currentHue = 280; 
 let animationId = null;
 let autoPilotInterval = null;
 let isAnimationComplete = false;
 
 let points = [];
-let sides = 0;
-let skip = 0;
-let totalSteps = 0;
-let glowAmount = 0;
-let hueShiftAmount = 15;
+let sides = sideInput ? parseInt(sideInput.value, 10) : 6;
+let skip = skipInput ? parseInt(skipInput.value, 10) : 1;
+let totalSteps = speedInput ? Math.max(1, 131 - parseInt(speedInput.value, 10)) : 30;
+let glowAmount = glowInput ? parseInt(glowInput.value, 10) : 0;
+let hueShiftAmount = hueShiftInput ? parseInt(hueShiftInput.value, 10) : 15;
 let currentStep = 0;
 let currentLine = 0;
 
