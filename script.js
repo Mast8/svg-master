@@ -31,6 +31,8 @@ const layerVal = document.getElementById('layerVal');
 const glowVal = document.getElementById('glowVal');
 const hueShiftVal = document.getElementById('hueShiftVal');
 
+const randomButton = document.getElementById('randomBtn');
+
 // State Variables
 let currentHue = 280; 
 let animationId = null;
@@ -45,6 +47,11 @@ let glowAmount = glowInput ? parseInt(glowInput.value, 10) : 0;
 let hueShiftAmount = hueShiftInput ? parseInt(hueShiftInput.value, 10) : 15;
 let currentStep = 0;
 let currentLine = 0;
+
+
+if (randomButton) {
+    randomButton.addEventListener('click', randomizeDrawing);
+}
 
 // Setup Listeners
 drawButton.addEventListener('click', startDrawing);
@@ -390,4 +397,55 @@ function generateSVGDocument() {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvas.width} ${canvas.height}" width="100%" height="100%">
   <rect width="100%" height="100%" fill="#121214"/>
 ${svgPathsMarkup}</svg>`;
+}
+
+function randomizeDrawing() {
+    // 1. Pick a random number of sides (e.g., between 3 and 24)
+    const minSides = sideInput ? parseInt(sideInput.min, 10) || 3 : 3;
+    const maxSides = sideInput ? parseInt(sideInput.max, 10) || 24 : 24;
+    const randomSides = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
+    
+    if (sideInput) {
+        sideInput.value = randomSides;
+        if (sideVal) sideVal.innerText = randomSides;
+    }
+
+    // 2. Safely calculate and set a valid skip value for the new side count
+    const maxSkip = Math.max(1, Math.floor(randomSides / 2));
+    const randomSkip = Math.floor(Math.random() * maxSkip) + 1;
+    if (skipInput) {
+        skipInput.max = maxSkip;
+        skipInput.value = randomSkip;
+        if (skipVal) skipVal.innerText = randomSkip;
+    }
+
+    // 3. Randomize layers (e.g., 1 to 5)
+    if (layerInput) {
+        const maxLayers = parseInt(layerInput.max, 10) || 5;
+        const randomLayers = Math.floor(Math.random() * maxLayers) + 1;
+        layerInput.value = randomLayers;
+        if (layerVal) layerVal.innerText = randomLayers;
+    }
+
+    // 4. Randomize glow amount (e.g., 0 to 30)
+    if (glowInput) {
+        const maxGlow = parseInt(glowInput.max, 10) || 40;
+        const randomGlow = Math.floor(Math.random() * (maxGlow + 1));
+        glowInput.value = randomGlow;
+        if (glowVal) glowVal.innerText = randomGlow;
+    }
+
+    // 5. Randomize Hue Shift angle (0° to 90°)
+    if (hueShiftInput) {
+        const maxShift = parseInt(hueShiftInput.max, 10) || 90;
+        const randomShift = Math.floor(Math.random() * (maxShift + 1));
+        hueShiftInput.value = randomShift;
+        if (hueShiftVal) hueShiftVal.innerText = randomShift + "°";
+    }
+
+    // 6. Roll a completely new starting base hue (0 to 359)
+    currentHue = Math.floor(Math.random() * 360);
+
+    // 7. Render
+    startDrawing();
 }
