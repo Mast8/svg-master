@@ -239,6 +239,47 @@ canvas {
     flex: 1;
 }
 
+/* ==========================================================================
+   Randomize Feature Extensions & Layout Adjustments
+   ========================================================================== */
+
+/* Split the secondary controls cleanly across the 2-column grid layout */
+#colorBtn, #autoBtn {
+    grid-column: span 1;
+}
+
+/* Ensure control operational triggers stack cleanly at full width */
+#randomBtn, #drawBtn {
+    grid-column: span 2;
+    margin-top: 0.25rem;
+}
+
+/* Re-style randomizer button to explicitly draw focus without breaking palette harmony */
+#randomBtn {
+    background-color: var(--bg-surface-elevated);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+}
+
+#randomBtn:hover {
+    background-color: var(--border-color);
+    border-color: var(--text-muted);
+}
+
+/* Mobile responsive scaling fixes for file control trays */
+@media (max-width: 640px) {
+    .export-tray {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0 1rem;
+    }
+    
+    .export-tray .btn {
+        width: 100%;
+    }
+}
+
+
 /* Responsive Scaling Viewport limits */
 @media (max-width: 900px) {
     .app-container { flex-direction: column; }
