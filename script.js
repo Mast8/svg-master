@@ -1,153 +1,182 @@
-// Globals and DOM nodes cache
-const canvas = document.getElementById('shapeCanvas');
-const ctx = canvas ? canvas.getContext('2d') : null;
+// Centralized Application State & DOM Cache
+const state = {
+    canvas: document.getElementById('shapeCanvas'),
+    ctx: document.getElementById('shapeCanvas')?.getContext('2d') || null,
+    
+    // Inputs
+    inputs: {
+        side: document.getElementById('sideCount'),
+        skip: document.getElementById('skipCount'),
+        layer: document.getElementById('layerCount'),
+        speed: document.getElementById('speedCtrl'),
+        glow: document.getElementById('glowCtrl'),
+        hueShift: document.getElementById('hueShift')
+    },
+    
+    // Buttons
+    buttons: {
+        color: document.getElementById('colorBtn'),
+        draw: document.getElementById('drawBtn'),
+        auto: document.getElementById('autoBtn'),
+        random: document.getElementById('randomBtn'),
+        exportPng: document.getElementById('exportBtn'),
+        svgExport: document.getElementById('svgExportBtn'),
+        svgDownload: document.getElementById('svgDownloadBtn')
+    },
+    
+    // Labels
+    labels: {
+        side: document.getElementById('sideVal'),
+        skip: document.getElementById('skipVal'),
+        layer: document.getElementById('layerVal'),
+        glow: document.getElementById('glowVal'),
+        hueShift: document.getElementById('hueShiftVal')
+    },
 
-// Ensure your canvas has default dimensions set if not defined in HTML
-if (canvas) {
-    if (!canvas.width) canvas.width = 600;
-    if (!canvas.height) canvas.height = 600;
-}
-
-// UI Controls & Inputs
-const sideInput = document.getElementById('sideCount');
-const skipInput = document.getElementById('skipCount');
-const layerInput = document.getElementById('layerCount');
-const speedInput = document.getElementById('speedCtrl');
-const glowInput = document.getElementById('glowCtrl');
-const hueShiftInput = document.getElementById('hueShift');
-
-// Action Buttons
-const colorButton = document.getElementById('colorBtn'); 
-const drawButton = document.getElementById('drawBtn');
-const autoButton = document.getElementById('autoBtn');
-const exportButton = document.getElementById('exportBtn');
-const svgExportButton = document.getElementById('svgExportBtn');
-const svgDownloadButton = document.getElementById('svgDownloadBtn');
-
-// Value Readout Labels
-const sideVal = document.getElementById('sideVal');
-const skipVal = document.getElementById('skipVal');
-const layerVal = document.getElementById('layerVal');
-const glowVal = document.getElementById('glowVal');
-const hueShiftVal = document.getElementById('hueShiftVal');
-
-const randomButton = document.getElementById('randomBtn');
-
-// State Variables
-let currentHue = 280; 
-let animationId = null;
-let autoPilotInterval = null;
-let isAnimationComplete = false;
-
-let points = [];
-let sides = sideInput ? parseInt(sideInput.value, 10) : 6;
-let skip = skipInput ? parseInt(skipInput.value, 10) : 1;
-let totalSteps = speedInput ? Math.max(1, 131 - parseInt(speedInput.value, 10)) : 30;
-let glowAmount = glowInput ? parseInt(glowInput.value, 10) : 0;
-let hueShiftAmount = hueShiftInput ? parseInt(hueShiftInput.value, 10) : 15;
-let currentStep = 0;
-let currentLine = 0;
-
-
-if (randomButton) {
-    randomButton.addEventListener('click', randomizeDrawing);
-}
-
-// Setup Listeners
-drawButton.addEventListener('click', startDrawing);
-
-colorButton.addEventListener('click', () => {
-    currentHue = (currentHue + 45) % 360; 
-    if (isAnimationComplete) renderFrame(sides, 0);
-});
-
-sideInput.addEventListener('input', () => { 
-    updateSliders(); 
-    startDrawing(); 
-});
-
-skipInput.addEventListener('input', () => { 
-    skipVal.innerText = skipInput.value; 
-    startDrawing(); 
-});
-
-layerInput.addEventListener('input', () => {
-    layerVal.innerText = layerInput.value;
-    if (isAnimationComplete) renderFrame(sides, 0);
-});
-
-speedInput.addEventListener('input', () => {
-    totalSteps = Math.max(1, 131 - parseInt(speedInput.value, 10));
-});
-
-glowInput.addEventListener('input', () => { 
-    glowAmount = parseInt(glowInput.value, 10) || 0;
-    glowVal.innerText = glowAmount;
-    if (isAnimationComplete) renderFrame(sides, 0);
-});
-
-hueShiftInput.addEventListener('input', () => {
-    hueShiftAmount = parseInt(hueShiftInput.value, 10);
-    hueShiftVal.innerText = hueShiftAmount + "°";
-    if (isAnimationComplete) renderFrame(sides, 0);
-});
-
-autoButton.addEventListener('click', toggleAutoPilot);
-
-window.onload = () => {
-    updateSliders();
-    startDrawing();
+    // Runtime Engine State Variables
+    currentHue: 280,
+    animationId: null,
+    autoPilotInterval: null,
+    isAnimationComplete: false,
+    points: [],
+    sides: 8,
+    skip: 2,
+    totalSteps: 30,
+    glowAmount: 15,
+    hueShiftAmount: 15,
+    currentStep: 0,
+    currentLine: 0
 };
 
+// Initialize Canvas Setup Boundaries
+if (state.canvas) {
+    if (!state.canvas.width) state.canvas.width = 600;
+    if (!state.canvas.height) state.canvas.height = 600;
+}
+
+// Global Event Routing Pipeline
+window.addEventListener('DOMContentLoaded', () => {
+    initListeners();
+    syncStateFromUI();
+    startDrawing();
+});
+
+function initListeners() {
+    const { inputs, buttons } = state;
+
+    buttons.draw?.addEventListener('click', startDrawing);
+    buttons.random?.addEventListener('click', randomizeDrawing);
+    buttons.auto?.addEventListener('click', toggleAutoPilot);
+    
+    buttons.color?.addEventListener('click', () => {
+        state.currentHue = (state.currentHue + 45) % 360;
+        if (state.isAnimationComplete) renderFrame(state.sides, 0);
+    });
+
+    inputs.side?.addEventListener('input', () => {
+        updateSliders();
+        startDrawing();
+    });
+
+    inputs.skip?.addEventListener('input', () => {
+        state.labels.skip.innerText = inputs.skip.value;
+        startDrawing();
+    });
+
+    inputs.layer?.addEventListener('input', () => {
+        state.labels.layer.innerText = inputs.layer.value;
+        if (state.isAnimationComplete) renderFrame(state.sides, 0);
+    });
+
+    inputs.speed?.addEventListener('input', () => {
+        state.totalSteps = Math.max(1, 131 - parseInt(inputs.speed.value, 10));
+    });
+
+    inputs.glow?.addEventListener('input', () => {
+        state.glowAmount = parseInt(inputs.glow.value, 10) || 0;
+        state.labels.glow.innerText = state.glowAmount;
+        if (state.isAnimationComplete) renderFrame(state.sides, 0);
+    });
+
+    inputs.hueShift?.addEventListener('input', () => {
+        state.hueShiftAmount = parseInt(inputs.hueShift.value, 10);
+        state.labels.hueShift.innerText = state.hueShiftAmount + "°";
+        if (state.isAnimationComplete) renderFrame(state.sides, 0);
+    });
+
+    buttons.svgExport?.addEventListener('click', handleSVGClipboardCopy);
+    buttons.svgDownload?.addEventListener('click', handleSVGDownload);
+    buttons.exportPng?.addEventListener('click', handlePNGExport);
+}
+
+function syncStateFromUI() {
+    const { inputs } = state;
+    state.sides = parseInt(inputs.side?.value, 10) || 8;
+    state.skip = parseInt(inputs.skip?.value, 10) || 2;
+    state.glowAmount = parseInt(inputs.glow?.value, 10) || 15;
+    state.hueShiftAmount = parseInt(inputs.hueShift?.value, 10) || 15;
+    state.totalSteps = inputs.speed ? Math.max(1, 131 - parseInt(inputs.speed.value, 10)) : 30;
+    updateSliders();
+}
+
 function updateSliders() {
-    sideVal.innerText = sideInput.value;
-    const maxSkip = Math.max(1, Math.floor(parseInt(sideInput.value, 10) / 2));
-    skipInput.max = maxSkip;
-    if (parseInt(skipInput.value, 10) > maxSkip) {
-        skipInput.value = maxSkip;
+    const { inputs, labels } = state;
+    if (!inputs.side) return;
+
+    labels.side.innerText = inputs.side.value;
+    const maxSkip = Math.max(1, Math.floor(parseInt(inputs.side.value, 10) / 2));
+    inputs.skip.max = maxSkip;
+
+    if (parseInt(inputs.skip.value, 10) > maxSkip) {
+        inputs.skip.value = maxSkip;
     }
-    skipVal.innerText = skipInput.value;
+    labels.skip.innerText = inputs.skip.value;
 }
 
 function startDrawing() {
-    if (animationId) cancelAnimationFrame(animationId);
-    isAnimationComplete = false;
+    if (state.animationId) cancelAnimationFrame(state.animationId);
+    state.isAnimationComplete = false;
 
-    sides = parseInt(sideInput.value, 10) || 3;
-    skip = parseInt(skipInput.value, 10) || 1;
-    totalSteps = Math.max(1, 131 - parseInt(speedInput.value, 10)); 
-    glowAmount = parseInt(glowInput.value, 10) || 0;
-    hueShiftAmount = parseInt(hueShiftInput.value, 10);
+    state.sides = parseInt(state.inputs.side.value, 10) || 3;
+    state.skip = parseInt(state.inputs.skip.value, 10) || 1;
+    state.totalSteps = Math.max(1, 131 - parseInt(state.inputs.speed.value, 10));
+    state.glowAmount = parseInt(state.inputs.glow.value, 10) || 0;
+    state.hueShiftAmount = parseInt(state.inputs.hueShift.value, 10);
 
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = 240; // Max optimal canvas boundary mapping radius
-    
-    points = [];
-    for (let i = 0; i < sides; i++) {
-        const angle = ((i * skip) * 2 * Math.PI / sides) - (Math.PI / 2);
-        points.push({
+    const centerX = state.canvas.width / 2;
+    const centerY = state.canvas.height / 2;
+    const radius = 240;
+
+    state.points = [];
+    for (let i = 0; i < state.sides; i++) {
+        const angle = ((i * state.skip) * 2 * Math.PI / state.sides) - (Math.PI / 2);
+        state.points.push({
             x: centerX + radius * Math.cos(angle),
             y: centerY + radius * Math.sin(angle)
         });
     }
 
-    currentStep = 0;
-    currentLine = 0;
+    state.currentStep = 0;
+    state.currentLine = 0;
     animate();
 }
 
 function renderFrame(completedLines, progress = 0) {
-    if (points.length === 0) return;
-    
+    if (state.points.length === 0 || !state.ctx) return;
+
+    const { ctx, canvas, points, sides, currentHue, glowAmount, hueShiftAmount } = state;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const layers = parseInt(layerInput.value, 10) || 1;
+    
+    const layers = parseInt(state.inputs.layer.value, 10) || 1;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
-    // Loop inwards through user-requested nested geometry layer depth maps
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
     for (let layer = 0; layer < layers; layer++) {
-        const scale = 1 - (layer * (0.6 / layers)); // Intelligently distribution spacing 
+        const scale = 1 - (layer * (0.6 / layers));
         const baseLayerHue = (currentHue + (layer * hueShiftAmount)) % 360;
 
         ctx.save();
@@ -155,21 +184,15 @@ function renderFrame(completedLines, progress = 0) {
         ctx.scale(scale, scale);
         ctx.translate(-centerX, -centerY);
 
-        // Core line drawing loops
+        // Core line loops
         for (let i = 0; i < completedLines; i++) {
             ctx.beginPath();
             const startPt = points[i % sides];
             const endPt = points[(i + 1) % sides];
-            
-            // Dynamic Hue Harmonization sequence per line loop segment
             const localHue = (baseLayerHue + (i * (360 / sides))) % 360;
             const strokeColor = `hsl(${localHue}, 95%, 60%)`;
-            
-            ctx.lineWidth = 4;
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
+
             ctx.strokeStyle = strokeColor;
-            
             if (glowAmount > 0) {
                 ctx.shadowBlur = glowAmount;
                 ctx.shadowColor = strokeColor;
@@ -182,21 +205,20 @@ function renderFrame(completedLines, progress = 0) {
             ctx.stroke();
         }
 
-        // Active progressive rendering tracking line execution branch
+        // Incremental Drawing Progressive Tracking Line
         if (completedLines < sides) {
             const startPt = points[completedLines % sides];
             const endPt = points[(completedLines + 1) % sides];
-            
+
             if (endPt) {
                 ctx.beginPath();
                 const activeHue = (baseLayerHue + (completedLines * (360 / sides))) % 360;
-                ctx.strokeStyle = `hsl(${activeHue}, 95%, 60%)`;
-                ctx.lineWidth = 4;
-                ctx.lineCap = "round";
+                const activeColor = `hsl(${activeHue}, 95%, 60%)`;
                 
+                ctx.strokeStyle = activeColor;
                 if (glowAmount > 0) {
                     ctx.shadowBlur = glowAmount;
-                    ctx.shadowColor = `hsl(${activeHue}, 95%, 60%)`;
+                    ctx.shadowColor = activeColor;
                 }
 
                 ctx.moveTo(startPt.x, startPt.y);
@@ -206,7 +228,7 @@ function renderFrame(completedLines, progress = 0) {
                 ctx.stroke();
             }
         } else {
-            // Fill closed loop shapes nicely on completion passes
+            // Fill closed loop path overlays on target compilation matches
             ctx.beginPath();
             ctx.moveTo(points[0].x, points[0].y);
             for (let i = 1; i < sides; i++) {
@@ -214,6 +236,7 @@ function renderFrame(completedLines, progress = 0) {
             }
             ctx.closePath();
             ctx.fillStyle = `hsl(${baseLayerHue}, 95%, 60%, 0.03)`;
+            ctx.shadowBlur = 0; // Disable shadows for layout base fills
             ctx.fill();
         }
         ctx.restore();
@@ -221,167 +244,65 @@ function renderFrame(completedLines, progress = 0) {
 }
 
 function animate() {
-    const progress = currentStep / totalSteps;
-    renderFrame(currentLine, progress);
+    const progress = state.currentStep / state.totalSteps;
+    renderFrame(state.currentLine, progress);
 
-    if (currentLine < sides) {
-        currentStep++;
-        if (currentStep > totalSteps) {
-            currentStep = 0;
-            currentLine++;
+    if (state.currentLine < state.sides) {
+        state.currentStep++;
+        if (state.currentStep > state.totalSteps) {
+            state.currentStep = 0;
+            state.currentLine++;
         }
-        animationId = requestAnimationFrame(animate);
+        state.animationId = requestAnimationFrame(animate);
     } else {
-        isAnimationComplete = true;
-        renderFrame(sides, 0); 
+        state.isAnimationComplete = true;
+        renderFrame(state.sides, 0);
     }
 }
 
 function toggleAutoPilot() {
-    if (autoPilotInterval) {
-        clearInterval(autoPilotInterval);
-        autoPilotInterval = null;
-        autoButton.innerText = "🚀 Auto-Pilot";
-        autoButton.classList.remove('btn-secondary');
-        autoButton.classList.add('btn-accent');
+    const { buttons, inputs } = state;
+    if (state.autoPilotInterval) {
+        clearInterval(state.autoPilotInterval);
+        state.autoPilotInterval = null;
+        buttons.auto.innerText = "🚀 Auto-Pilot";
+        buttons.auto.classList.replace('btn-secondary', 'btn-accent');
     } else {
-        autoButton.innerText = "⏸ Stop Auto";
-        autoButton.classList.remove('btn-accent');
-        autoButton.classList.add('btn-secondary');
-        
-        autoPilotInterval = setInterval(() => {
-            let currentSides = parseInt(sideInput.value, 10);
-            let nextSides = currentSides + 1;
-            if (nextSides > 24) nextSides = 5; 
-            
-            sideInput.value = nextSides;
+        buttons.auto.innerText = "⏸ Stop Auto";
+        buttons.auto.classList.replace('btn-accent', 'btn-secondary');
+
+        state.autoPilotInterval = setInterval(() => {
+            let nextSides = (parseInt(inputs.side.value, 10) || 5) + 1;
+            if (nextSides > 24) nextSides = 5;
+
+            inputs.side.value = nextSides;
             updateSliders();
-            currentHue = (currentHue + 25) % 360;
+            state.currentHue = (state.currentHue + 25) % 360;
             startDrawing();
         }, 4000);
     }
 }
 
-// Production SVG Data Compiler & Exporter
-svgExportButton.addEventListener('click', () => {
-    if (points.length === 0) return;
-    
-    const layers = parseInt(layerInput.value, 10) || 1;
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    
-    let svgPathsMarkup = "";
-
-    // Iterate structural transforms down cleanly matching Canvas state configurations
-    for (let layer = 0; layer < layers; layer++) {
-        const scale = 1 - (layer * (0.6 / layers));
-        const baseLayerHue = (currentHue + (layer * hueShiftAmount)) % 360;
-        
-        let pathSegments = "";
-        for (let i = 0; i < sides; i++) {
-            const startPt = points[i % sides];
-            const endPt = points[(i + 1) % sides];
-            const localHue = (baseLayerHue + (i * (360 / sides))) % 360;
-            const strokeColor = `hsl(${localHue}, 95%, 60%)`;
-            
-            // Generate distinct vector path items to map clean inline styling color waves
-            pathSegments += `\n    <path d="M ${startPt.x} ${startPt.y} L ${endPt.x} ${endPt.y}" stroke="${strokeColor}" stroke-dasharray="none" />`;
-        }
-
-        // Apply visual transform vectors to simulate real-time inner scaling matrices directly inside SVG markup
-        svgPathsMarkup += `  <g transform="translate(${centerX}, ${centerY}) scale(${scale}) translate(${-centerX}, ${-centerY})" fill="hsl(${baseLayerHue}, 95%, 60%, 0.02)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="${points.map(p => `${p.x},${p.y}`).join(' ')}" stroke="none" />${pathSegments}
-  </g>\n`;
-    }
-
-    const svgFullDocument = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvas.width} ${canvas.height}" width="100%" height="100%">
-  <rect width="100%" height="100%" fill="#121214"/>
-${svgPathsMarkup}</svg>`;
-
-    navigator.clipboard.writeText(svgFullDocument).then(() => {
-        const originalText = svgExportButton.innerText;
-        svgExportButton.innerText = "✓ Copied Clean SVG Code!";
-        svgExportButton.style.background = "#10b981";
-        setTimeout(() => {
-            svgExportButton.innerText = originalText;
-            svgExportButton.style.background = "";
-        }, 2500);
-    }).catch(err => console.error('Could not parse clipboard save actions: ', err));
-});
-
-// PNG High-Res Raster Exporter logic
-exportButton.addEventListener('click', () => {
-    if (points.length === 0) return;
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
-    const tempCtx = tempCanvas.getContext('2d');
-
-    tempCtx.fillStyle = '#121214'; 
-    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-    tempCtx.drawImage(canvas, 0, 0);
-
-    const downloadLink = document.createElement('a');
-    downloadLink.href = tempCanvas.toDataURL('image/png');
-    downloadLink.download = `geovector-${sideInput.value}v-${skipInput.value}.png`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-});
-
-// Direct SVG File Downloader
-svgDownloadButton.addEventListener('click', () => {
-    const svgFullDocument = generateSVGDocument();
-    if (!svgFullDocument) return;
-
-    // Convert SVG markup string into a binary blob
-    const svgBlob = new Blob([svgFullDocument], { type: "image/svg+xml;charset=utf-8" });
-    const svgUrl = URL.createObjectURL(svgBlob);
-
-    // Create virtual anchor link and click it to trigger native saving
-    const downloadLink = document.createElement('a');
-    downloadLink.href = svgUrl;
-    downloadLink.download = `geovector-${sideInput.value}v-${skipInput.value}.svg`;
-    
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    
-    // Memory Cleanup
-    document.body.removeChild(downloadLink);
-    URL.revokeObjectURL(svgUrl);
-
-    // UI Feedback Micro-Interaction
-    const originalText = svgDownloadButton.innerText;
-    svgDownloadButton.innerText = "✓ File Saved!";
-    const prevBackground = svgDownloadButton.style.background;
-    svgDownloadButton.style.background = "#10b981";
-    setTimeout(() => {
-        svgDownloadButton.innerText = originalText;
-        svgDownloadButton.style.background = prevBackground;
-    }, 2000);
-});
-
 function generateSVGDocument() {
+    const { points, sides, currentHue, hueShiftAmount, canvas, inputs } = state;
     if (points.length === 0) return "";
-    
-    const layers = parseInt(layerInput.value, 10) || 1;
-    // Fix: Read directly from your defined canvas element
+
+    const layers = parseInt(inputs.layer.value, 10) || 1;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    
     let svgPathsMarkup = "";
 
     for (let layer = 0; layer < layers; layer++) {
         const scale = 1 - (layer * (0.6 / layers));
         const baseLayerHue = (currentHue + (layer * hueShiftAmount)) % 360;
-        
         let pathSegments = "";
+
         for (let i = 0; i < sides; i++) {
             const startPt = points[i % sides];
             const endPt = points[(i + 1) % sides];
             const localHue = (baseLayerHue + (i * (360 / sides))) % 360;
             const strokeColor = `hsl(${localHue}, 95%, 60%)`;
-            
+
             pathSegments += `\n    <line x1="${startPt.x}" y1="${startPt.y}" x2="${endPt.x}" y2="${endPt.y}" stroke="${strokeColor}" stroke-width="4" stroke-linecap="round" />`;
         }
 
@@ -393,59 +314,115 @@ function generateSVGDocument() {
   </g>\n`;
     }
 
-    // Fix: Read directly from your defined canvas element
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvas.width} ${canvas.height}" width="100%" height="100%">
   <rect width="100%" height="100%" fill="#121214"/>
 ${svgPathsMarkup}</svg>`;
 }
 
+function handleSVGClipboardCopy() {
+    const svgFullDocument = generateSVGDocument();
+    if (!svgFullDocument) return;
+
+    navigator.clipboard.writeText(svgFullDocument).then(() => {
+        const btn = state.buttons.svgExport;
+        const originalText = btn.innerText;
+        btn.innerText = "✓ Copied Clean SVG Code!";
+        btn.style.background = "#10b981";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "";
+        }, 2500);
+    }).catch(err => console.error('Could not copy system SVG elements: ', err));
+}
+
+function handleSVGDownload() {
+    const svgFullDocument = generateSVGDocument();
+    if (!svgFullDocument) return;
+
+    const svgBlob = new Blob([svgFullDocument], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const downloadLink = document.createElement('a');
+    
+    downloadLink.href = svgUrl;
+    downloadLink.download = `geovector-${state.inputs.side.value}v-${state.inputs.skip.value}.svg`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(svgUrl);
+
+    const btn = state.buttons.svgDownload;
+    const originalText = btn.innerText;
+    btn.innerText = "✓ File Saved!";
+    const prevBackground = btn.style.background;
+    btn.style.background = "#10b981";
+    setTimeout(() => {
+        btn.innerText = originalText;
+        btn.style.background = prevBackground;
+    }, 2000);
+}
+
+function handlePNGExport() {
+    if (state.points.length === 0) return;
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = state.canvas.width;
+    tempCanvas.height = state.canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+
+    tempCtx.fillStyle = '#121214';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    tempCtx.drawImage(state.canvas, 0, 0);
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = tempCanvas.toDataURL('image/png');
+    downloadLink.download = `geovector-${state.inputs.side.value}v-${state.inputs.skip.value}.png`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
 function randomizeDrawing() {
-    // 1. Pick a random number of sides (e.g., between 3 and 24)
-    const minSides = sideInput ? parseInt(sideInput.min, 10) || 3 : 3;
-    const maxSides = sideInput ? parseInt(sideInput.max, 10) || 24 : 24;
+    const { inputs, labels } = state;
+    
+    const minSides = inputs.side ? parseInt(inputs.side.min, 10) || 3 : 3;
+    const maxSides = inputs.side ? parseInt(inputs.side.max, 10) || 24 : 24;
     const randomSides = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
     
-    if (sideInput) {
-        sideInput.value = randomSides;
-        if (sideVal) sideVal.innerText = randomSides;
+    if (inputs.side) {
+        inputs.side.value = randomSides;
+        if (labels.side) labels.side.innerText = randomSides;
     }
 
-    // 2. Safely calculate and set a valid skip value for the new side count
     const maxSkip = Math.max(1, Math.floor(randomSides / 2));
     const randomSkip = Math.floor(Math.random() * maxSkip) + 1;
-    if (skipInput) {
-        skipInput.max = maxSkip;
-        skipInput.value = randomSkip;
-        if (skipVal) skipVal.innerText = randomSkip;
+    if (inputs.skip) {
+        inputs.skip.max = maxSkip;
+        inputs.skip.value = randomSkip;
+        if (labels.skip) labels.skip.innerText = randomSkip;
     }
 
-    // 3. Randomize layers (e.g., 1 to 5)
-    if (layerInput) {
-        const maxLayers = parseInt(layerInput.max, 10) || 5;
+    if (inputs.layer) {
+        const maxLayers = parseInt(inputs.layer.max, 10) || 5;
         const randomLayers = Math.floor(Math.random() * maxLayers) + 1;
-        layerInput.value = randomLayers;
-        if (layerVal) layerVal.innerText = randomLayers;
+        inputs.layer.value = randomLayers;
+        if (labels.layer) labels.layer.innerText = randomLayers;
     }
 
-    // 4. Randomize glow amount (e.g., 0 to 30)
-    if (glowInput) {
-        const maxGlow = parseInt(glowInput.max, 10) || 40;
+    if (inputs.glow) {
+        const maxGlow = parseInt(inputs.glow.max, 10) || 40;
         const randomGlow = Math.floor(Math.random() * (maxGlow + 1));
-        glowInput.value = randomGlow;
-        if (glowVal) glowVal.innerText = randomGlow;
+        inputs.glow.value = randomGlow;
+        if (labels.glow) labels.glow.innerText = randomGlow;
     }
 
-    // 5. Randomize Hue Shift angle (0° to 90°)
-    if (hueShiftInput) {
-        const maxShift = parseInt(hueShiftInput.max, 10) || 90;
+    if (inputs.hueShift) {
+        const maxShift = parseInt(inputs.hueShift.max, 10) || 90;
         const randomShift = Math.floor(Math.random() * (maxShift + 1));
-        hueShiftInput.value = randomShift;
-        if (hueShiftVal) hueShiftVal.innerText = randomShift + "°";
+        inputs.hueShift.value = randomShift;
+        if (labels.hueShift) labels.hueShift.innerText = randomShift + "°";
     }
 
-    // 6. Roll a completely new starting base hue (0 to 359)
-    currentHue = Math.floor(Math.random() * 360);
-
-    // 7. Render
+    state.currentHue = Math.floor(Math.random() * 360);
+    syncStateFromUI();
     startDrawing();
 }
