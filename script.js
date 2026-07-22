@@ -10,7 +10,8 @@ const state = {
         layer: document.getElementById('layerCount'),
         speed: document.getElementById('speedCtrl'),
         glow: document.getElementById('glowCtrl'),
-        hueShift: document.getElementById('hueShift')
+        hueShift: document.getElementById('hueShift'),
+        bgColor: document.getElementById('bgColorCtrl') // <-- Added background color input
     },
     
     // Buttons
@@ -35,6 +36,7 @@ const state = {
 
     // Runtime Engine State Variables
     currentHue: 280,
+    bgColor: '#121214', // <-- Added default background color state
     animationId: null,
     autoPilotInterval: null,
     isAnimationComplete: false,
@@ -71,6 +73,13 @@ function initListeners() {
     buttons.color?.addEventListener('click', () => {
         state.currentHue = (state.currentHue + 45) % 360;
         if (state.isAnimationComplete) renderFrame(state.sides, 0);
+    });
+
+    inputs.bgColor?.addEventListener('input', (e) => { // <-- Added Listener for Background Color
+        state.bgColor = e.target.value;
+        if (state.isAnimationComplete) {
+            renderFrame(state.sides, 0);
+        }
     });
 
     inputs.side?.addEventListener('input', () => {
@@ -116,6 +125,7 @@ function syncStateFromUI() {
     state.glowAmount = parseInt(inputs.glow?.value, 10) || 15;
     state.hueShiftAmount = parseInt(inputs.hueShift?.value, 10) || 15;
     state.totalSteps = inputs.speed ? Math.max(1, 131 - parseInt(inputs.speed.value, 10)) : 30;
+    if (inputs.bgColor?.value) state.bgColor = inputs.bgColor.value; // <-- Sync initial color value
     updateSliders();
 }
 
@@ -164,8 +174,11 @@ function startDrawing() {
 function renderFrame(completedLines, progress = 0) {
     if (state.points.length === 0 || !state.ctx) return;
 
-    const { ctx, canvas, points, sides, currentHue, glowAmount, hueShiftAmount } = state;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const { ctx, canvas, points, sides, currentHue, glowAmount, hueShiftAmount, bgColor } = state;
+    
+    // Fill canvas background dynamically with state color
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     const layers = parseInt(state.inputs.layer.value, 10) || 1;
     const centerX = canvas.width / 2;
@@ -284,7 +297,7 @@ function toggleAutoPilot() {
 }
 
 function generateSVGDocument() {
-    const { points, sides, currentHue, hueShiftAmount, canvas, inputs } = state;
+    const { points, sides, currentHue, hueShiftAmount, canvas, inputs, bgColor } = state;
     if (points.length === 0) return "";
 
     const layers = parseInt(inputs.layer.value, 10) || 1;
@@ -315,7 +328,7 @@ function generateSVGDocument() {
     }
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvas.width} ${canvas.height}" width="100%" height="100%">
-  <rect width="100%" height="100%" fill="#121214"/>
+  <rect width="100%" height="100%" fill="${bgColor}"/>
 ${svgPathsMarkup}</svg>`;
 }
 
@@ -369,7 +382,7 @@ function handlePNGExport() {
     tempCanvas.height = state.canvas.height;
     const tempCtx = tempCanvas.getContext('2d');
 
-    tempCtx.fillStyle = '#121214';
+    tempCtx.fillStyle = state.bgColor;
     tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
     tempCtx.drawImage(state.canvas, 0, 0);
 
