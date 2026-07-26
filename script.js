@@ -11,7 +11,8 @@ const state = {
         speed: document.getElementById('speedCtrl'),
         glow: document.getElementById('glowCtrl'),
         hueShift: document.getElementById('hueShift'),
-        bgColor: document.getElementById('bgColorCtrl') // <-- Added background color input
+        bgColor: document.getElementById('bgColorCtrl'),
+        drawColor: document.getElementById('drawColorCtrl') // <-- Added drawing color input
     },
     
     // Buttons
@@ -36,7 +37,9 @@ const state = {
 
     // Runtime Engine State Variables
     currentHue: 280,
-    bgColor: '#121214', // <-- Added default background color state
+    bgColor: '#121214',
+    drawColor: '#00f0ff', // <-- Added default drawing stroke color
+    isCustomColor: false, // <-- Tracks whether to use fixed custom color or dynamic HSL
     animationId: null,
     autoPilotInterval: null,
     isAnimationComplete: false,
@@ -70,13 +73,25 @@ function initListeners() {
     buttons.random?.addEventListener('click', randomizeDrawing);
     buttons.auto?.addEventListener('click', toggleAutoPilot);
     
+    // Cycle Hue via Button (Resets custom color override)
     buttons.color?.addEventListener('click', () => {
+        state.isCustomColor = false;
         state.currentHue = (state.currentHue + 45) % 360;
         if (state.isAnimationComplete) renderFrame(state.sides, 0);
     });
 
-    inputs.bgColor?.addEventListener('input', (e) => { // <-- Added Listener for Background Color
+    // Background Color Picker
+    inputs.bgColor?.addEventListener('input', (e) => {
         state.bgColor = e.target.value;
+        if (state.isAnimationComplete) {
+            renderFrame(state.sides, 0);
+        }
+    });
+
+    // Drawing Color Picker
+    inputs.drawColor?.addEventListener('input', (e) => { // <-- Added Listener for Drawing Color
+        state.drawColor = e.target.value;
+        state.isCustomColor = true;
         if (state.isAnimationComplete) {
             renderFrame(state.sides, 0);
         }
@@ -125,7 +140,8 @@ function syncStateFromUI() {
     state.glowAmount = parseInt(inputs.glow?.value, 10) || 15;
     state.hueShiftAmount = parseInt(inputs.hueShift?.value, 10) || 15;
     state.totalSteps = inputs.speed ? Math.max(1, 131 - parseInt(inputs.speed.value, 10)) : 30;
-    if (inputs.bgColor?.value) state.bgColor = inputs.bgColor.value; // <-- Sync initial color value
+    if (inputs.bgColor?.value) state.bgColor = inputs.bgColor.value;
+    if (inputs.drawColor?.value) state.drawColor = inputs.drawColor.value; // <-- Sync initial draw color
     updateSliders();
 }
 
@@ -171,10 +187,19 @@ function startDrawing() {
     animate();
 }
 
+function getStrokeColor(layer, lineIndex) {
+    if (state.isCustomColor) {
+        return state.drawColor;
+    }
+    const baseLayerHue = (state.currentHue + (layer * state.hueShiftAmount)) % 360;
+    const localHue = (baseLayerHue + (lineIndex * (360 / state.sides))) % 360;
+    return `hsl(${localHue}, 95%, 60%)`;
+}
+
 function renderFrame(completedLines, progress = 0) {
     if (state.points.length === 0 || !state.ctx) return;
 
-    const { ctx, canvas, points, sides, currentHue, glowAmount, hueShiftAmount, bgColor } = state;
+    const { ctx, canvas, points, sides, glowAmount, bgColor } = state;
     
     // Fill canvas background dynamically with state color
     ctx.fillStyle = bgColor;
@@ -190,7 +215,6 @@ function renderFrame(completedLines, progress = 0) {
 
     for (let layer = 0; layer < layers; layer++) {
         const scale = 1 - (layer * (0.6 / layers));
-        const baseLayerHue = (currentHue + (layer * hueShiftAmount)) % 360;
 
         ctx.save();
         ctx.translate(centerX, centerY);
@@ -202,8 +226,7 @@ function renderFrame(completedLines, progress = 0) {
             ctx.beginPath();
             const startPt = points[i % sides];
             const endPt = points[(i + 1) % sides];
-            const localHue = (baseLayerHue + (i * (360 / sides))) % 360;
-            const strokeColor = `hsl(${localHue}, 95%, 60%)`;
+            const strokeColor = getStrokeColor(layer, i);
 
             ctx.strokeStyle = strokeColor;
             if (glowAmount > 0) {
@@ -225,8 +248,7 @@ function renderFrame(completedLines, progress = 0) {
 
             if (endPt) {
                 ctx.beginPath();
-                const activeHue = (baseLayerHue + (completedLines * (360 / sides))) % 360;
-                const activeColor = `hsl(${activeHue}, 95%, 60%)`;
+                const activeColor = getStrokeColor(layer, completedLines);
                 
                 ctx.strokeStyle = activeColor;
                 if (glowAmount > 0) {
@@ -241,15 +263,16 @@ function renderFrame(completedLines, progress = 0) {
                 ctx.stroke();
             }
         } else {
-            // Fill closed loop path overlays on target compilation matches
+            // Fill closed loop path overlays
             ctx.beginPath();
             ctx.moveTo(points[0].x, points[0].y);
             for (let i = 1; i < sides; i++) {
                 ctx.lineTo(points[i].x, points[i].y);
             }
             ctx.closePath();
-            ctx.fillStyle = `hsl(${baseLayerHue}, 95%, 60%, 0.03)`;
-            ctx.shadowBlur = 0; // Disable shadows for layout base fills
+            
+            ctx.fillStyle = state.isCustomColor ? `${state.drawColor}10` : `hsl(${(state.currentHue + (layer * state.hueShiftAmount)) % 360}, 95%, 60%, 0.03)`;
+            ctx.shadowBlur = 0;
             ctx.fill();
         }
         ctx.restore();
@@ -297,7 +320,7 @@ function toggleAutoPilot() {
 }
 
 function generateSVGDocument() {
-    const { points, sides, currentHue, hueShiftAmount, canvas, inputs, bgColor } = state;
+    const { points, sides, canvas, inputs, bgColor } = state;
     if (points.length === 0) return "";
 
     const layers = parseInt(inputs.layer.value, 10) || 1;
@@ -307,20 +330,18 @@ function generateSVGDocument() {
 
     for (let layer = 0; layer < layers; layer++) {
         const scale = 1 - (layer * (0.6 / layers));
-        const baseLayerHue = (currentHue + (layer * hueShiftAmount)) % 360;
         let pathSegments = "";
 
         for (let i = 0; i < sides; i++) {
             const startPt = points[i % sides];
             const endPt = points[(i + 1) % sides];
-            const localHue = (baseLayerHue + (i * (360 / sides))) % 360;
-            const strokeColor = `hsl(${localHue}, 95%, 60%)`;
+            const strokeColor = getStrokeColor(layer, i);
 
             pathSegments += `\n    <line x1="${startPt.x}" y1="${startPt.y}" x2="${endPt.x}" y2="${endPt.y}" stroke="${strokeColor}" stroke-width="4" stroke-linecap="round" />`;
         }
 
         const polyPoints = points.map(p => `${p.x},${p.y}`).join(' ');
-        const fillAlphaColor = `hsla(${baseLayerHue}, 95%, 60%, 0.03)`;
+        const fillAlphaColor = state.isCustomColor ? `${state.drawColor}10` : `hsla(${(state.currentHue + (layer * state.hueShiftAmount)) % 360}, 95%, 60%, 0.03)`;
 
         svgPathsMarkup += `  <g transform="translate(${centerX}, ${centerY}) scale(${scale}) translate(${-centerX}, ${-centerY})">
     <polygon points="${polyPoints}" fill="${fillAlphaColor}" stroke="none" />${pathSegments}
@@ -436,6 +457,7 @@ function randomizeDrawing() {
     }
 
     state.currentHue = Math.floor(Math.random() * 360);
+    state.isCustomColor = false; // Reset to dynamic HSL rainbow on randomize
     syncStateFromUI();
     startDrawing();
 }
