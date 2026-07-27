@@ -56,10 +56,11 @@ input[type="color"]::-moz-color-swatch {
 body {
     background-color: var(--bg-dark-core);
     color: var(--text-main);
-    min-height: 100vh;
+    height: 100vh; /* Lock height to viewport height */
+    max-height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow-x: hidden;
+    overflow: hidden; /* Prevents whole-page scrolling */
 }
 
 /* Header & Micro-Sponsorship Grid */
@@ -134,6 +135,7 @@ body {
     display: flex;
     flex: 1;
     position: relative;
+    overflow: hidden; /* Keeps sidebar and stage contained */
 }
 
 .controls-sidebar {
