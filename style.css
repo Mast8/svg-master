@@ -248,13 +248,15 @@ input[type="range"] {
 
 .canvas-wrapper {
     background-color: #121214;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Glassmorphism hint on headers */
+.app-header {
+    backdrop-filter: blur(8px);
+    background-color: rgba(24, 24, 27, 0.85);
 }
 
 canvas {
