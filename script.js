@@ -12,7 +12,7 @@ const state = {
         glow: document.getElementById('glowCtrl'),
         hueShift: document.getElementById('hueShift'),
         bgColor: document.getElementById('bgColorCtrl'),
-        drawColor: document.getElementById('drawColorCtrl') // <-- Added drawing color input
+        drawColor: document.getElementById('drawColorCtrl')
     },
     
     // Buttons
@@ -38,8 +38,8 @@ const state = {
     // Runtime Engine State Variables
     currentHue: 280,
     bgColor: '#121214',
-    drawColor: '#00f0ff', // <-- Added default drawing stroke color
-    isCustomColor: false, // <-- Tracks whether to use fixed custom color or dynamic HSL
+    drawColor: '#00f0ff',
+    isCustomColor: false,
     animationId: null,
     autoPilotInterval: null,
     isAnimationComplete: false,
@@ -83,18 +83,14 @@ function initListeners() {
     // Background Color Picker
     inputs.bgColor?.addEventListener('input', (e) => {
         state.bgColor = e.target.value;
-        if (state.isAnimationComplete) {
-            renderFrame(state.sides, 0);
-        }
+        if (state.isAnimationComplete) renderFrame(state.sides, 0);
     });
 
     // Drawing Color Picker
-    inputs.drawColor?.addEventListener('input', (e) => { // <-- Added Listener for Drawing Color
+    inputs.drawColor?.addEventListener('input', (e) => {
         state.drawColor = e.target.value;
         state.isCustomColor = true;
-        if (state.isAnimationComplete) {
-            renderFrame(state.sides, 0);
-        }
+        if (state.isAnimationComplete) renderFrame(state.sides, 0);
     });
 
     inputs.side?.addEventListener('input', () => {
@@ -103,12 +99,12 @@ function initListeners() {
     });
 
     inputs.skip?.addEventListener('input', () => {
-        state.labels.skip.innerText = inputs.skip.value;
+        if (state.labels.skip) state.labels.skip.innerText = inputs.skip.value;
         startDrawing();
     });
 
     inputs.layer?.addEventListener('input', () => {
-        state.labels.layer.innerText = inputs.layer.value;
+        if (state.labels.layer) state.labels.layer.innerText = inputs.layer.value;
         if (state.isAnimationComplete) renderFrame(state.sides, 0);
     });
 
@@ -118,13 +114,13 @@ function initListeners() {
 
     inputs.glow?.addEventListener('input', () => {
         state.glowAmount = parseInt(inputs.glow.value, 10) || 0;
-        state.labels.glow.innerText = state.glowAmount;
+        if (state.labels.glow) state.labels.glow.innerText = state.glowAmount;
         if (state.isAnimationComplete) renderFrame(state.sides, 0);
     });
 
     inputs.hueShift?.addEventListener('input', () => {
-        state.hueShiftAmount = parseInt(inputs.hueShift.value, 10);
-        state.labels.hueShift.innerText = state.hueShiftAmount + "°";
+        state.hueShiftAmount = parseInt(inputs.hueShift.value, 10) || 0;
+        if (state.labels.hueShift) state.labels.hueShift.innerText = state.hueShiftAmount + "°";
         if (state.isAnimationComplete) renderFrame(state.sides, 0);
     });
 
@@ -141,7 +137,7 @@ function syncStateFromUI() {
     state.hueShiftAmount = parseInt(inputs.hueShift?.value, 10) || 15;
     state.totalSteps = inputs.speed ? Math.max(1, 131 - parseInt(inputs.speed.value, 10)) : 30;
     if (inputs.bgColor?.value) state.bgColor = inputs.bgColor.value;
-    if (inputs.drawColor?.value) state.drawColor = inputs.drawColor.value; // <-- Sync initial draw color
+    if (inputs.drawColor?.value) state.drawColor = inputs.drawColor.value;
     updateSliders();
 }
 
@@ -149,25 +145,27 @@ function updateSliders() {
     const { inputs, labels } = state;
     if (!inputs.side) return;
 
-    labels.side.innerText = inputs.side.value;
+    if (labels.side) labels.side.innerText = inputs.side.value;
     const maxSkip = Math.max(1, Math.floor(parseInt(inputs.side.value, 10) / 2));
-    inputs.skip.max = maxSkip;
-
-    if (parseInt(inputs.skip.value, 10) > maxSkip) {
-        inputs.skip.value = maxSkip;
+    
+    if (inputs.skip) {
+        inputs.skip.max = maxSkip;
+        if (parseInt(inputs.skip.value, 10) > maxSkip) {
+            inputs.skip.value = maxSkip;
+        }
+        if (labels.skip) labels.skip.innerText = inputs.skip.value;
     }
-    labels.skip.innerText = inputs.skip.value;
 }
 
 function startDrawing() {
     if (state.animationId) cancelAnimationFrame(state.animationId);
     state.isAnimationComplete = false;
 
-    state.sides = parseInt(state.inputs.side.value, 10) || 3;
-    state.skip = parseInt(state.inputs.skip.value, 10) || 1;
-    state.totalSteps = Math.max(1, 131 - parseInt(state.inputs.speed.value, 10));
-    state.glowAmount = parseInt(state.inputs.glow.value, 10) || 0;
-    state.hueShiftAmount = parseInt(state.inputs.hueShift.value, 10);
+    state.sides = parseInt(state.inputs.side?.value, 10) || 3;
+    state.skip = parseInt(state.inputs.skip?.value, 10) || 1;
+    state.totalSteps = state.inputs.speed ? Math.max(1, 131 - parseInt(state.inputs.speed.value, 10)) : 30;
+    state.glowAmount = parseInt(state.inputs.glow?.value, 10) || 0;
+    state.hueShiftAmount = parseInt(state.inputs.hueShift?.value, 10) || 0;
 
     const centerX = state.canvas.width / 2;
     const centerY = state.canvas.height / 2;
@@ -201,11 +199,10 @@ function renderFrame(completedLines, progress = 0) {
 
     const { ctx, canvas, points, sides, glowAmount, bgColor } = state;
     
-    // Fill canvas background dynamically with state color
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    const layers = parseInt(state.inputs.layer.value, 10) || 1;
+    const layers = parseInt(state.inputs.layer?.value, 10) || 1;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
@@ -221,7 +218,7 @@ function renderFrame(completedLines, progress = 0) {
         ctx.scale(scale, scale);
         ctx.translate(-centerX, -centerY);
 
-        // Core line loops
+        // Render completed lines
         for (let i = 0; i < completedLines; i++) {
             ctx.beginPath();
             const startPt = points[i % sides];
@@ -229,19 +226,15 @@ function renderFrame(completedLines, progress = 0) {
             const strokeColor = getStrokeColor(layer, i);
 
             ctx.strokeStyle = strokeColor;
-            if (glowAmount > 0) {
-                ctx.shadowBlur = glowAmount;
-                ctx.shadowColor = strokeColor;
-            } else {
-                ctx.shadowBlur = 0;
-            }
+            ctx.shadowBlur = glowAmount > 0 ? glowAmount : 0;
+            ctx.shadowColor = glowAmount > 0 ? strokeColor : "transparent";
 
             ctx.moveTo(startPt.x, startPt.y);
             ctx.lineTo(endPt.x, endPt.y);
             ctx.stroke();
         }
 
-        // Incremental Drawing Progressive Tracking Line
+        // Incremental active drawing line
         if (completedLines < sides) {
             const startPt = points[completedLines % sides];
             const endPt = points[(completedLines + 1) % sides];
@@ -251,10 +244,8 @@ function renderFrame(completedLines, progress = 0) {
                 const activeColor = getStrokeColor(layer, completedLines);
                 
                 ctx.strokeStyle = activeColor;
-                if (glowAmount > 0) {
-                    ctx.shadowBlur = glowAmount;
-                    ctx.shadowColor = activeColor;
-                }
+                ctx.shadowBlur = glowAmount > 0 ? glowAmount : 0;
+                ctx.shadowColor = glowAmount > 0 ? activeColor : "transparent";
 
                 ctx.moveTo(startPt.x, startPt.y);
                 const currentX = startPt.x + (endPt.x - startPt.x) * progress;
@@ -263,7 +254,7 @@ function renderFrame(completedLines, progress = 0) {
                 ctx.stroke();
             }
         } else {
-            // Fill closed loop path overlays
+            // Fill closed loop path
             ctx.beginPath();
             ctx.moveTo(points[0].x, points[0].y);
             for (let i = 1; i < sides; i++) {
@@ -298,6 +289,8 @@ function animate() {
 
 function toggleAutoPilot() {
     const { buttons, inputs } = state;
+    if (!buttons.auto) return;
+
     if (state.autoPilotInterval) {
         clearInterval(state.autoPilotInterval);
         state.autoPilotInterval = null;
@@ -308,10 +301,10 @@ function toggleAutoPilot() {
         buttons.auto.classList.replace('btn-accent', 'btn-secondary');
 
         state.autoPilotInterval = setInterval(() => {
-            let nextSides = (parseInt(inputs.side.value, 10) || 5) + 1;
+            let nextSides = (parseInt(inputs.side?.value, 10) || 5) + 1;
             if (nextSides > 24) nextSides = 5;
 
-            inputs.side.value = nextSides;
+            if (inputs.side) inputs.side.value = nextSides;
             updateSliders();
             state.currentHue = (state.currentHue + 25) % 360;
             startDrawing();
@@ -323,7 +316,7 @@ function generateSVGDocument() {
     const { points, sides, canvas, inputs, bgColor } = state;
     if (points.length === 0) return "";
 
-    const layers = parseInt(inputs.layer.value, 10) || 1;
+    const layers = parseInt(inputs.layer?.value, 10) || 1;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     let svgPathsMarkup = "";
@@ -359,6 +352,7 @@ function handleSVGClipboardCopy() {
 
     navigator.clipboard.writeText(svgFullDocument).then(() => {
         const btn = state.buttons.svgExport;
+        if (!btn) return;
         const originalText = btn.innerText;
         btn.innerText = "✓ Copied Clean SVG Code!";
         btn.style.background = "#10b981";
@@ -378,7 +372,7 @@ function handleSVGDownload() {
     const downloadLink = document.createElement('a');
     
     downloadLink.href = svgUrl;
-    downloadLink.download = `geovector-${state.inputs.side.value}v-${state.inputs.skip.value}.svg`;
+    downloadLink.download = `geovector-${state.inputs.side?.value || 8}v-${state.inputs.skip?.value || 2}.svg`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
 
@@ -386,6 +380,7 @@ function handleSVGDownload() {
     URL.revokeObjectURL(svgUrl);
 
     const btn = state.buttons.svgDownload;
+    if (!btn) return;
     const originalText = btn.innerText;
     btn.innerText = "✓ File Saved!";
     const prevBackground = btn.style.background;
@@ -397,7 +392,7 @@ function handleSVGDownload() {
 }
 
 function handlePNGExport() {
-    if (state.points.length === 0) return;
+    if (state.points.length === 0 || !state.canvas) return;
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = state.canvas.width;
     tempCanvas.height = state.canvas.height;
@@ -409,7 +404,7 @@ function handlePNGExport() {
 
     const downloadLink = document.createElement('a');
     downloadLink.href = tempCanvas.toDataURL('image/png');
-    downloadLink.download = `geovector-${state.inputs.side.value}v-${state.inputs.skip.value}.png`;
+    downloadLink.download = `geovector-${state.inputs.side?.value || 8}v-${state.inputs.skip?.value || 2}.png`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
@@ -457,7 +452,7 @@ function randomizeDrawing() {
     }
 
     state.currentHue = Math.floor(Math.random() * 360);
-    state.isCustomColor = false; // Reset to dynamic HSL rainbow on randomize
+    state.isCustomColor = false;
     syncStateFromUI();
     startDrawing();
 }
